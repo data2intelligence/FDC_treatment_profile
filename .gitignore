@@ -1,0 +1,11 @@
+build
+dist
+git_*
+diff
+raw
+.*project
+.settings
+*.egg-info
+__pycache__
+*.pyc
+*~
