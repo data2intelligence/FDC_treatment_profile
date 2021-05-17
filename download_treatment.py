@@ -6,14 +6,16 @@ from glob import glob
 
 
 def download_file_list(f, out_path):
+    """ Download all sample annotations and expression data matrices (if available from FDC automatic processing from public repositories) """
     fin = open(f)
     for l in fin:
         url = l.strip()
         
         fields = url.split('/')
-        target = fields[-2]
+        target = fields[-1]
         
-        if target.find('.meta') > 0: target += '.' + fields[-3]
+        # also add curator ID for meta annotations
+        if target.find('.meta') > 0: target += '.' + fields[-2]
         
         print(target)
         urllib.request.urlretrieve(url, os.path.join(out_path, target))
@@ -23,6 +25,9 @@ def download_file_list(f, out_path):
 
 
 def get_differential(condition, meta, data):
+    """ Generate differential expression profile from meta data """
+    
+    # common conditions
     common = data.columns.intersection(meta.index).intersection(condition.index)
     
     N = common.shape[0]
@@ -66,6 +71,7 @@ def get_differential(condition, meta, data):
 
 
 def merge_sub_condition(result):
+    """ Certain datasets may have sub conditions, merge them to generate a master differential files """
     info = pandas.DataFrame([v.split('@') for v in result.columns], index=result.columns, columns=['Treatment', 'Condition'])
     
     # .split(' join ')[0]
@@ -92,7 +98,8 @@ def merge_sub_condition(result):
 
 
 def simple_group(result):
-    # use simple group for now
+    """ Ignore all conditions, just generate a merge file with conditions as biological replicates """
+    
     result.columns = [v.split(' rep ')[0].split('@')[0].split('&')[0] for v in result.columns]
     
     cnt_map = result.columns.value_counts()
@@ -109,6 +116,9 @@ def simple_group(result):
 
 
 def process_curation_result_path(raw_path, output_path):
+    """ Master function to analyze data annotations and generate differential expression profile """
+    
+    # get all meta annotations, each meta annotation will generate one differential profile
     meta_files = glob(os.path.join(raw_path, '*.meta.*'))
     
     for meta in meta_files:
@@ -117,18 +127,20 @@ def process_curation_result_path(raw_path, output_path):
         
         #if title.split('.meta.')[0] not in ['GSE133968']: continue
         
+        # find the matched expression matrices
         data_files = glob(re.sub('[.]meta.*', '.*.processed.gz', meta))
         if len(data_files) == 0: continue
         
         meta = pandas.read_csv(meta, sep='\t', index_col=0)
         
+        # these two key columns must exist
         if 'Treatment' not in meta.columns or 'Condition' not in meta.columns:
             sys.stderr.write('Cannot find Treatment, Condition columns for %s\n' % title)
             continue
         
-        # two key columns must be all present
         meta = meta.loc[meta[['Condition', 'Treatment']].isnull().sum(axis=1) == 0]
         
+        # two few samples annotated, no need to analyze such dataset
         if meta.shape[0] < 2:
             sys.stderr.write('Not sufficient samples for %s\n' % title)
             continue
@@ -137,9 +149,10 @@ def process_curation_result_path(raw_path, output_path):
         meta = meta.loc[:, (~meta.isnull()).sum() > 0]    
         meta.fillna('', inplace=True)
         
+        # does the current dataset have sub conditions?
         flag_sub_condition = ('Sub Condition' in meta.columns)
         
-        # escape all separators: & @
+        # escape all separators: & @, because we will use these characters as field separators in column names
         meta = meta.astype(str).apply(lambda arr: arr.apply(lambda v: v.replace('&','-').replace('@','-')))
         
         # all possible first order combinations
