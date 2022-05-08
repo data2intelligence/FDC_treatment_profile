@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
-import os, sys, re, numpy, copy, pandas
-import urllib.request
+import os, sys, re, numpy, copy, pandas, requests, browsercookie
 from glob import glob
+
+# please change this to other browsers if you are not using chrome
+cj = browsercookie.chrome()
 
 
 def download_file_list(f, out_path):
@@ -18,7 +20,15 @@ def download_file_list(f, out_path):
         if target.find('.meta') > 0: target += '.' + fields[-2]
         
         print(target)
-        urllib.request.urlretrieve(url, os.path.join(out_path, target))
+
+        fout = open(os.path.join(out_path, target), 'wb')
+        
+        read = requests.get(url, cookies=cj)
+        for chunk in read.iter_content(chunk_size=512):
+            if chunk: fout.write(chunk)
+        
+        fout.close()
+        
     fin.close()
 
 
