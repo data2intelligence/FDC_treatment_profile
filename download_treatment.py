@@ -23,7 +23,13 @@ def download_file_list(f, out_path):
 
         fout = open(os.path.join(out_path, target), 'wb')
         
-        read = requests.get(url, cookies=cj)
+        try:
+            # For unknown reason, requests will get stuck without timeout parameter
+            # any users who know the reason please contact me
+            read = requests.get(url, cookies=cj, timeout=1)
+        except requests.exceptions.Timeout as err:
+            print(err)
+        
         for chunk in read.iter_content(chunk_size=512):
             if chunk: fout.write(chunk)
         
@@ -134,6 +140,8 @@ def process_curation_result_path(raw_path, output_path):
     for meta in meta_files:
         title = os.path.basename(meta)
         curator = title.split('.meta.')[1]
+        
+        print(meta)
         
         #if title.split('.meta.')[0] not in ['GSE133968']: continue
         
