@@ -7,6 +7,8 @@ Step 1: please login to FDC website with Google Chrome with your credential.
 	  
 Step 2: run this command. Input your keychain password if prompted  
 ./download_treatment.py test/result.example.txt  
+
+If you want to process all CytoSig data, we also included all result catalog files in the same folder (result.Cytokine.txt, result.Chemokine.txt, result.Growth_factor.txt, result.Inhibitory.txt)  
   
 As the result, in the test folder, you will see two new folders:  
 1, raw: raw data download from FDC server, including meta data annotation and processed expression matrices (FDC can automatically generate it from public repositories).  
@@ -14,5 +16,4 @@ As the result, in the test folder, you will see two new folders:
 
 This example code only works for treatment experiment with annotation fields, Treatment, Condition, Sub Condition, Dose, and Duration. For other curation scheme, you need to design your own program.  
 
-For unknown reason, the python requests library will get stuck without timeout parameter. If any users know the reason, please contact me at pengj@alumni.princeton.edu
-
+For unknown reason, the python requests library will get stuck without timeout parameter. If any users know the reason, please contact me at pengj@alumni.princeton.edu  
